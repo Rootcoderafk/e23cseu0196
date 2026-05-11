@@ -12,36 +12,33 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-/**
- * Main execution flow for the evaluation assignment.
- */
+// This is the main entry point for the whole evaluation process
 async function runEvaluation() {
   console.log('=== AFFORDMED EVALUATION SERVICE STARTING ===');
 
   try {
-    // 1. Authenticate / Register
+    // Step 1: Get the auth token and stuff ready
     await Log('backend', 'info', 'service', 'Initiating authentication sequence...');
-    await authenticate(); // Force refresh token on every run for safety
+    await authenticate(); // Always refresh token just to be safe
 
-    // 2. Part 2: Priority Inbox (Stage 6)
+    // Step 2: Run the priority inbox logic (Stage 6)
     await getPriorityNotifications();
 
-    // 3. Part 3: Vehicle Scheduling
+    // Step 3: Run the vehicle scheduling logic (DP part)
     await scheduleVehicles();
 
     await Log('backend', 'info', 'service', 'Evaluation flow completed successfully.');
     console.log('=== EVALUATION FLOW COMPLETED ===');
   } catch (error: any) {
-    console.error('Fatal error in evaluation flow:', error.message);
+    console.error('Something went wrong in the main flow:', error.message);
     await Log('backend', 'fatal', 'service', `Critical failure in main flow: ${error.message}`);
   }
 }
 
-// Start server (though the assignment is mostly script-like execution, 
-// keeping it as a server as per tech stack requirements)
+// Starting the express server on port 3000
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   
-  // Trigger the evaluation flow
+  // Kick off the evaluation steps
   await runEvaluation();
 });

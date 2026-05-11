@@ -1,57 +1,53 @@
-# AffordMed Evaluation Assignment Submission
+# AffordMed Backend Assignment - Aditya Kumar
 
-This repository contains the backend implementation for the AffordMed evaluation assignment.
+This is my submission for the AffordMed evaluation project. I've built a Node.js backend using TypeScript that handles the authentication, a priority-based notification system, and a vehicle maintenance scheduler.
 
-## Tech Stack
-- **Runtime:** Node.js
-- **Language:** TypeScript
-- **Framework:** Express
-- **API Client:** Axios
-- **Task Runner:** ts-node-dev
+## Tech Used
+- Node.js & TypeScript
+- Express (for the server)
+- Axios (for API calls)
+- ts-node-dev (to run everything)
 
-## Project Structure
-- `src/config`: API endpoints and Authentication logic.
-- `src/middleware`: Logging middleware and utility.
-- `src/notification-system`: Design documents (Stages 1-5) and Priority Inbox implementation (Stage 6).
-- `src/vehicle-scheduling`: Vehicle Maintenance Scheduler using 0/1 Knapsack Dynamic Programming.
-- `src/index.ts`: Entry point that executes the evaluation flow.
+## Folders
+- `src/config`: Has the API URLs and all the auth/registration logic.
+- `src/middleware`: Just a simple logger that sends logs to the server.
+- `src/notification-system`: Contains the design docs (Stages 1-5) and the priority inbox code.
+- `src/vehicle-scheduling`: My DP solution for the vehicle scheduling task.
+- `src/index.ts`: The main file that runs everything in order.
 
-## Setup Instructions
+## How to get it running
 
-1. **Install Dependencies:**
+1. **Install stuff:**
    ```bash
    npm install
    ```
 
-2. **Configure Environment:**
-   Copy the `.env.example` file to create a new `.env` file and fill in your details:
+2. **Setup your environment:**
+   First, copy the example file to make your own `.env`:
    ```bash
    cp .env.example .env
    ```
-   Then edit `.env`:
-   
-   ACCESS_CODE=your_access_code
-   ```
+   Then open `.env` and fill in your actual details (Email, Name, Roll No, Access Code, etc.).
 
-3. **Run the Application:**
+3. **Start the app:**
    ```bash
    npm run dev
    ```
-   The application will automatically:
-   - Register you with the evaluation service (if credentials aren't present).
-   - Authenticate and retrieve a Bearer token.
-   - Fetch and display the **Top 10 Priority Unread Notifications**.
-   - Solve the **Vehicle Maintenance Scheduling** problem for each depot using DP.
-   - Log all major events to the remote logging service.
 
-## Implementation Details
+When you run it, the script will:
+- Automatically register you and get your IDs.
+- Log in to get a fresh token.
+- Print the **Top 10 Priority Notifications** to the console.
+- Calculate the best **Vehicle Maintenance Schedule** for each depot using Dynamic Programming.
+- Send logs for everything to the AffordMed logging service.
+
+## My Implementation
 
 ### Part 1: Logging
-The `Log` function validates parameters (stack, level, package) and sends a POST request to the logging API asynchronously. It is designed to be resilient and never crash the application on network failure.
+I made a `Log` function that checks the level and package name before sending it off. It's asynchronous so it doesn't slow down the main logic, and it handles errors gracefully so the app won't crash if the log server is down.
 
-### Part 2: Notification Microservice
-- **Stages 1-5:** Detailed design and strategy documents are located in `src/notification-system/`.
-- **Stage 6:** Priority inbox sorting uses a weighted score combining `Type` (Placement > Result > Event) and `Recency` (Timestamp).
+### Part 2: Notification Inbox
+I wrote out the full design for the notification system (see the .md files in the folder). For the priority logic, I used a weighted scoring system: **Placement > Result > Event**. If two have the same type, the newer one wins.
 
 ### Part 3: Vehicle Scheduling
-The scheduler implements the **0/1 Knapsack algorithm** using a 2D Dynamic Programming table. For each depot, it calculates the subset of vehicles that maximizes the `impact` score without exceeding the `mechanicHours` capacity.
+This was a classic **0/1 Knapsack problem**. I used a 2D DP table to find the best combination of tasks for each depot's hour limit. It works out the max possible impact score for every depot based on the vehicles available.

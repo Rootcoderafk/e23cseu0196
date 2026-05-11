@@ -1,35 +1,27 @@
-# STAGE 2: Database Selection and Schema
+# Stage 2: Database and Schema Design
 
-## Recommended DB: PostgreSQL
-PostgreSQL is chosen for its strong consistency, support for relational data, and mature indexing capabilities.
+## Choosing the Database: PostgreSQL
+I'm going with **PostgreSQL** for this because it's reliable, handles structured data well, and has great indexing for fast queries. Since notifications need to be consistent (you don't want a "read" notification showing up as "unread"), a relational DB makes the most sense.
 
-## Schema Design (Relational)
-### Table: `notifications`
-| Column | Type | Description |
-| :--- | :--- | :--- |
-| `id` | `UUID` (PK) | Unique identifier |
-| `student_id` | `INT` (FK) | Reference to student |
-| `title` | `VARCHAR(255)`| Notification title |
-| `message` | `TEXT` | Detailed message |
-| `type` | `ENUM` | `Event`, `Result`, `Placement` |
-| `is_read` | `BOOLEAN` | Read status (default: false) |
-| `created_at` | `TIMESTAMP` | ISO 8601 timestamp |
+## My Schema
+### `notifications` table
+- `id` (UUID): Primary key.
+- `student_id` (Integer): Foreign key to the student table.
+- `title` (Varchar): Brief heading.
+- `message` (Text): The actual content.
+- `type` (Enum): Can be `Event`, `Result`, or `Placement`.
+- `is_read` (Boolean): Tracking if the student opened it.
+- `created_at` (Timestamp): When it was sent.
 
-## Indexing Strategy
-- Index on `student_id` for fast user-specific lookups.
-- Composite index on `(student_id, is_read, created_at DESC)` to optimize the common "latest unread" query.
+## Indexing for Speed
+I'll add an index on `student_id` since we'll always be looking for a specific student's alerts. I'd also add a composite index on `(student_id, is_read, created_at)` to make fetching the "latest unread" notifications super fast.
 
-## SQL vs NoSQL Tradeoffs
-- **SQL (PostgreSQL):**
-  - **Pros:** ACID compliance, structured data, complex joins.
-  - **Cons:** Horizontal scaling is harder than NoSQL (though possible with sharding).
-- **NoSQL (MongoDB):**
-  - **Pros:** High write throughput, flexible schema, easy horizontal scaling.
-  - **Cons:** Eventual consistency (usually), lacks rigid relationships.
+## SQL vs NoSQL - Why SQL?
+- **SQL (Postgres):** Better for data integrity and complex queries. It's a bit harder to scale horizontally but for a campus system, it's perfect.
+- **NoSQL (like MongoDB):** Great for massive writes and flexible schemas, but you lose some of the strict relational features that help keep the data clean.
 
-## Scaling Issues
-As notifications grow into millions:
-- **Table Bloat:** VACUUMing becomes slow.
-- **Index Size:** Indexes might no longer fit in RAM, slowing down reads.
-- **Write Saturation:** Single node might struggle with 50,000+ writes/sec.
-- **Solution:** Use **Database Sharding** (by `student_id`) or **Partitioning** (by `created_at`).
+## Potential Bottlenecks
+If we hit millions of rows:
+1. **Slow Queries**: Indexes might get too big for RAM.
+2. **Write Stress**: A single database might get overwhelmed during peak times (like result announcements).
+3. **Fix**: We could use **Database Partitioning** (splitting the table by date) or **Sharding** (splitting by student ID range) to keep things fast.

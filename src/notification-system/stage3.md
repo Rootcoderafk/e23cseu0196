@@ -1,38 +1,38 @@
-# STAGE 3: Query Optimization
+# Stage 3: Making Queries Faster
 
-## Problem Analysis
-The query:
+## What's wrong with the current query?
+The original query looks something like this:
 ```sql
 SELECT * FROM notifications
-WHERE studentID = 1042
-AND isRead = false
+WHERE studentID = 1042 AND isRead = false
 ORDER BY createdAt DESC;
 ```
-### Why it's slow:
-1. **Full Table Scan:** Without an index, the DB scans every row to find student 1042.
-2. **Sorting Cost:** `ORDER BY createdAt DESC` requires the DB to sort all matching results in memory (or disk if too large).
-3. **Cardinality:** If a student has thousands of notifications, filtering by `isRead` might still be slow if `isRead` is not part of the index.
 
-### Indexing Strategy:
-Create a **Composite Index**:
+**The issues:**
+- **No Index**: If we don't have an index, the database has to look at every single notification just to find the ones for student 1042. This is called a "Full Table Scan" and it's super slow once the data grows.
+- **Sorting is heavy**: Sorting by `createdAt` takes extra CPU and memory.
+- **Filtering**: Checking `isRead` for every row is also inefficient without help.
+
+## My Fix: Composite Index
+I'd create one index that covers everything we're searching for:
 ```sql
-CREATE INDEX idx_student_unread_latest ON notifications (student_id, is_read, created_at DESC);
+CREATE INDEX idx_student_unread_latest 
+ON notifications (student_id, is_read, created_at DESC);
 ```
-- **Why this works:** The DB can jump directly to the student, then to unread ones, and they are already stored in the requested sort order.
+**Why this is better:** It puts the data in the exact order we need. The DB finds the student, skips straight to the unread ones, and they're already sorted by date. It's basically a direct shortcut.
 
-### Why indexing every column is bad:
-1. **Write Overhead:** Every `INSERT`/`UPDATE` must update all relevant indexes.
-2. **Storage Space:** Indexes take up disk and memory (RAM).
-3. **Query Optimizer Confusion:** Too many indexes can sometimes lead the optimizer to pick a sub-optimal plan.
+## Why not just index everything?
+You might think "why not just add indexes to every column?" But that's a bad idea because:
+1. **Slower Writes**: Every time you add a notification, the DB has to update all those indexes. It makes saving data much slower.
+2. **Space**: Indexes take up a lot of room on the disk and in the RAM.
+3. **Clutter**: Having too many indexes can actually confuse the database's query planner.
 
-## Optimized Query Task
-**Requirement:** Find all students who got placement notifications in last 7 days.
-**Type Enum:** `Event`, `Result`, `Placement`.
-
+## Solving the "Last 7 Days" Problem
+To find students who got placement alerts in the last week, I'd use this:
 ```sql
 SELECT DISTINCT studentID
 FROM notifications
-WHERE notificationType = 'Placement'
-AND createdAt >= NOW() - INTERVAL '7 days';
+WHERE type = 'Placement'
+AND created_at >= NOW() - INTERVAL '7 days';
 ```
-*(Assuming `createdAt` is a timestamp and `notificationType` is an ENUM or VARCHAR)*
+*(I used `DISTINCT` because one student might have gotten multiple alerts, and we just need the IDs once.)*

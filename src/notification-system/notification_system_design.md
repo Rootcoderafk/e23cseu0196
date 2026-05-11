@@ -1,62 +1,44 @@
-# STAGE 1: API Design for Notification System
+# Stage 1: API Design
 
-## 1. Fetch Notifications
-- **Endpoint:** `GET /api/v1/notifications`
-- **Request Headers:**
-  - `Authorization: Bearer <access_token>`
-- **Query Parameters:**
-  - `page`: Page number for pagination.
-  - `limit`: Number of items per page.
-- **Response:**
+Here’s my plan for the APIs we'll need for the campus notification system. I'm trying to keep it standard RESTful but also adding WebSockets for real-time alerts.
+
+## 1. Getting the list of notifications
+- **URL:** `GET /api/v1/notifications`
+- **Auth:** Needs a Bearer Token in the header.
+- **Params:** We can use `page` and `limit` to handle pagination so the app doesn't lag if someone has 500 notifications.
+- **Example Response:**
   ```json
   {
     "notifications": [
       {
-        "id": "uuid",
-        "title": "Placement Drive",
-        "message": "Company X is visiting tomorrow.",
+        "id": "abc-123",
+        "title": "New Placement Alert",
+        "message": "Google is coming to campus!",
         "type": "Placement",
         "isRead": false,
-        "createdAt": "2023-10-27T10:00:00Z"
+        "createdAt": "2024-05-11T10:00:00Z"
       }
     ],
-    "pagination": { "total": 100, "page": 1, "limit": 10 }
+    "pagination": { "total": 45, "page": 1, "limit": 10 }
   }
   ```
 
-## 2. Unread Notifications Count
-- **Endpoint:** `GET /api/v1/notifications/unread/count`
-- **Request Headers:**
-  - `Authorization: Bearer <access_token>`
-- **Response:**
-  ```json
-  { "count": 5 }
-  ```
+## 2. Checking how many unread ones are there
+- **URL:** `GET /api/v1/notifications/unread-count`
+- **Why?** This is just to show that little red badge on the app icon or bell icon.
+- **Response:** `{ "count": 12 }`
 
-## 3. Mark as Read
-- **Endpoint:** `PATCH /api/v1/notifications/:id/read`
-- **Request Headers:**
-  - `Authorization: Bearer <access_token>`
-- **Response:**
-  ```json
-  { "success": true, "message": "Notification marked as read." }
-  ```
+## 3. Marking something as read
+- **URL:** `PATCH /api/v1/notifications/:id/read`
+- **Method:** `PATCH` because we're just updating one field (`isRead`).
+- **Response:** `{ "status": "ok" }`
 
-## 4. Real-time Notifications (WebSocket)
-- **URL:** `ws://api.campus.edu/notifications`
-- **Protocol:** WebSocket
-- **Connection Handshake:**
-  - Client sends `token` during handshake or as the first message.
-- **Events:**
-  - `new_notification`: Sent by server when a new notification is generated.
-  ```json
-  {
-    "event": "new_notification",
-    "data": { "id": "...", "title": "...", "type": "..." }
-  }
-  ```
+## 4. Real-time updates (WebSockets)
+For stuff like results or emergency alerts, we can't wait for the user to refresh.
+- **URL:** `ws://campus-api.edu/notifications`
+- **How it works:** Once the student logs in, the app opens a socket. Whenever a new alert hits the database, the server pushes a `new_notification` event to the client immediately.
 
-## Naming Conventions
-- **Endpoints:** Kebab-case (`/unread-notifications` - though I used `unread/count` for grouping).
-- **JSON Fields:** CamelCase (`isRead`, `createdAt`).
-- **RESTful Principles:** Use standard HTTP verbs (`GET`, `POST`, `PATCH`, `DELETE`).
+## Naming & Rules
+- I'm using **camelCase** for the JSON keys because it's standard in JS/TS.
+- Endpoints use **kebab-case** (lowercase with dashes).
+- Standard HTTP status codes (200 for success, 401 for auth issues, etc.) will be used.

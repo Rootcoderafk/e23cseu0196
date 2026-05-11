@@ -8,9 +8,7 @@ dotenv.config();
 
 const envPath = path.resolve(process.cwd(), '.env');
 
-/**
- * Updates the .env file with new key-value pairs.
- */
+// Helper to swap out values in the .env file without messsing up other lines
 function updateEnv(updates: Record<string, string>) {
   let envContent = fs.readFileSync(envPath, 'utf8');
   for (const [key, value] of Object.entries(updates)) {
@@ -25,14 +23,12 @@ function updateEnv(updates: Record<string, string>) {
   fs.writeFileSync(envPath, envContent);
 }
 
-/**
- * Registers the student with the evaluation service.
- */
+// Function to handle the initial registration and get the client ID/Secret
 export async function register() {
   const { EMAIL, NAME, MOBILE_NO, GITHUB_USERNAME, ROLL_NO, ACCESS_CODE } = process.env;
 
   if (!EMAIL || !NAME || !MOBILE_NO || !GITHUB_USERNAME || !ROLL_NO || !ACCESS_CODE) {
-    throw new Error('Registration credentials missing in .env');
+    throw new Error('You need to fill in all the details in the .env file first!');
   }
 
   try {
@@ -46,23 +42,23 @@ export async function register() {
     });
 
     const { clientID, clientSecret } = response.data;
+    // Save these so we don't have to register every single time
     updateEnv({ CLIENT_ID: clientID, CLIENT_SECRET: clientSecret });
-    console.log('Registration successful! CLIENT_ID and CLIENT_SECRET saved.');
+    console.log('Registration done! Got the IDs.');
     return response.data;
   } catch (error: any) {
-    console.error('Registration failed:', error.response?.data || error.message);
+    console.error('Registration broke:', error.response?.data || error.message);
     throw error;
   }
 }
 
-/**
- * Authenticates and fetches a new access token.
- */
+// Function to get a fresh Bearer token from the auth endpoint
 export async function authenticate() {
   const { CLIENT_ID, CLIENT_SECRET } = process.env;
 
+  // If we don't have IDs yet, try registering first
   if (!CLIENT_ID || !CLIENT_SECRET) {
-    console.log('CLIENT_ID or CLIENT_SECRET missing. Attempting registration...');
+    console.log('No IDs found, trying to register now...');
     await register();
   }
 
@@ -77,18 +73,17 @@ export async function authenticate() {
     });
 
     const { access_token } = response.data;
+    // Update the token in our env file so the rest of the app can use it
     updateEnv({ ACCESS_TOKEN: access_token });
-    console.log('Authentication successful! ACCESS_TOKEN saved.');
+    console.log('Auth success! Token is ready.');
     return access_token;
   } catch (error: any) {
-    console.error('Authentication failed:', error.response?.data || error.message);
+    console.error('Auth failed:', error.response?.data || error.message);
     throw error;
   }
 }
 
-/**
- * Ensures a valid token is available.
- */
+// Check if we already have a token, otherwise get one
 export async function ensureAuth() {
   if (!process.env.ACCESS_TOKEN) {
     return await authenticate();
