@@ -29,11 +29,7 @@ This repository contains the backend implementation for the AffordMed evaluation
    cp .env.example .env
    ```
    Then edit `.env`:
-   EMAIL=your_email@example.com
-   NAME=Your Name
-   MOBILE_NO=1234567890
-   GITHUB_USERNAME=your_github
-   ROLL_NO=your_roll_no
+   
    ACCESS_CODE=your_access_code
    ```
 
